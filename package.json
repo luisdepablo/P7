@@ -13,7 +13,7 @@
     "CORE",
     "QUIZ"
   ],
-  "author": "Santiago",
+  "author": "ging",
   "license": "Unlicense",
   "dependencies": {
     "underscore": "^1.8.3",
