@@ -9,7 +9,6 @@ const fs = require('fs-extra');
 const Utils = require('./utils');
 const to = require('./to');
 const Browser = require('zombie');
-const child_process = require("child_process");
 const spawn = require("child_process").spawn;
 
 // CRITICAL ERRORS
@@ -57,12 +56,8 @@ describe("CORE19-07_quiz_mvc_server", function () {
             this.msg_ok = "Dependencies installed successfully";
             // replace answers file
             let error_deps;
-            try {
-                fs.copySync(quizzes_orig, quizzes_back, {"overwrite": true});
-                fs.copySync(quizzes_test, quizzes_orig, {"overwrite": true});
-            } catch (e) {
-                error_deps = e;
-            }
+            try {fs.copySync(quizzes_orig, quizzes_back, {"overwrite": true});} catch (e){}
+            try {fs.copySync(quizzes_test, quizzes_orig, {"overwrite": true});} catch (e){}
             if (error_deps) {
                 this.msg_err = "Error copying the answers file: " + error_deps;
                 error_critical = this.msg_err;
@@ -150,7 +145,7 @@ describe("CORE19-07_quiz_mvc_server", function () {
 
     it('', async function () {
         this.name = `5: Checking 'Delete' implementation...`;
-        this.score = 2;
+        this.score = 3;
         if (error_critical) {
             this.msg_err = error_critical;
             should.not.exist(error_critical);
@@ -159,7 +154,8 @@ describe("CORE19-07_quiz_mvc_server", function () {
             [error_nav, resp] = await to(browser.visit(URL));
             [error_nav, resp] = await to(browser.click('a[href="/quizzes/3?_method=DELETE"]'));
             this.msg_ok = `Successfully deleted quiz 3 in ${URL}`;
-            this.msg_err = `Could not delete quiz 3 clicking '${expected}' in ${URL}`;
+            [error_nav, resp] = await to(browser.visit(URL));
+            this.msg_err = `Could not delete quiz 3 clicking '${expected}' in ${URL}\n\t\t\tError: >>${error_nav}`;
             browser.querySelectorAll(expected).length.should.be.equal(0);
         }
     });
@@ -172,7 +168,6 @@ describe("CORE19-07_quiz_mvc_server", function () {
             should.not.exist(error_critical);
         } else {
             const expected = /yes/i;
-            let error_nav = null;
             [error_nav, resp] = await to(browser.visit(URL));
             if (error_nav) {
                 this.msg_err = `Couldn't find '${expected}' in ${URL}\n\t\t\tError: >>${error_nav}<<\n\t\t\tReceived: >>${browser.html('body')}<<`;
