@@ -200,6 +200,6 @@ describe("CORE19-07_quiz_mvc_server", function () {
             await to(timeout(T_WAIT * 1000));
         }
         // restore original db file
-        fs.copySync(quizzes_back, quizzes_orig, {"overwrite": true});
+        try {fs.copySync(quizzes_back, quizzes_orig, {"overwrite": true});} catch (e){}
     });
 });
