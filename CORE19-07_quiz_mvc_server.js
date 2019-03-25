@@ -8,7 +8,7 @@ app.use(bodyParser.urlencoded({extended: true}));
 
 // Import MW supporting Method Override with express
 const methodOverride = require('method-override');
-app.use(methodOverride('_method'));
+app.use(methodOverride('_method',{methods: ["POST", "GET"]}));
 
 
 // ========== MODEL ==========
@@ -56,6 +56,7 @@ const style = `
             .button:hover { background: #356094; }
         </style>`;
 
+const table=``;
 // View to display all the quizzes passed into the quizzes parameter.
 const indexView = quizzes =>
     `<!doctype html>
@@ -66,15 +67,19 @@ const indexView = quizzes =>
         ${style}
     </head>
     <body>
+       
         <h1>Quizzes</h1>` +
         quizzes.map(quiz =>
             `<div>
-                <a href="/quizzes/${quiz.id}/play">${quiz.question}</a>
-                <a href="/quizzes/${quiz.id}/edit"
-                   class="button">Edit</a>
-                <a href="/quizzes/${quiz.id}?_method=DELETE"
-                   onClick="return confirm('Delete: ${quiz.question}')"
-                   class="button">Delete</a>
+            <table class='table'>
+                <tr><a href="/quizzes/${quiz.id}/play">${quiz.question}</a></tr>
+                
+                    <tr><a href="/quizzes/${quiz.id}/edit"
+                        class="button">Edit</a></tr>
+                    <tr><a href="/quizzes/${quiz.id}?_method=delete"
+                        onClick="return confirm('Delete: ${quiz.question}')"
+                        class="button">Delete</a></tr>
+                </table>
              </div>`).join("\n") +
             `<a href="/quizzes/new" class="button">New Quiz</a>
     </body>
@@ -149,6 +154,25 @@ const newView =(quiz) => {
 // View to show a form to edit the given quiz.
 const editView =(quiz) => {
     // .... introducir código
+    return `<!doctype html>
+    <html>
+    <head>
+        <meta charset="utf-8">
+        <title>P7: Quiz</title>
+        ${style}
+    </head>
+    <body>
+        <h1>Edit Quiz</h1>
+        <form method="POST" action="/quizzes/${quiz.id}?_method=PUT">
+        
+            Question: <input type="text" name="question" value="${quiz.question}" placeholder="Question" /> <br />
+            Answer: <input type="text" name="answer"   value="${quiz.answer}"   placeholder="Answer" />
+            <input type="submit" class="button" value="Update" /> <br />
+        </form>
+        <a href="/quizzes" class="button">Go back</a>
+    </body>
+    </html>`;
+
 }
 
 
@@ -214,16 +238,57 @@ const createController = (req, res, next) => {
 //  GET /quizzes/:id/edit
 const editController = (req, res, next) => {
     // .... introducir código
+    let id= Number(req.params.id);
+    if (Number.isNaN(id)) return next(`id "${req.params.id}" is not a number.`);
+    Quiz.findByPk(id)
+    .then(quiz=>{
+        console.log(id);
+        if(!quiz){
+            return next(new Error(`Quiz ${id} not found.`));
+        }
+        return res.send(editView(quiz));
+    })
+    .catch(next);
+
+
 };
 
 //  PUT /quizzes/:id
 const updateController = (req, res, next) => {
     // .... introducir código
+    let question= req.body.question;
+    console.log(question);
+    let answer=req.body.answer;
+    let id= Number(req.params.id);
+    if (Number.isNaN(id)) return next(`id "${req.params.id}" is not a number.`);
+    console.log(req.params.id);
+    
+
+    Quiz.findByPk(id)
+    .then(quiz=>{
+        quiz.question=question;
+        quiz.answer=answer;
+        return quiz;
+        
+    })
+    .then(quiz=>{
+        return quiz.save();
+    })
+    .then(res.redirect('/quizzes'))
+    .catch(next);
 };
 
 // DELETE /quizzes/:id
 const destroyController = (req, res, next) => {
      // .... introducir código
+    let ids= Number(req.params.id);
+    console.log(ids);
+    if (Number.isNaN(ids)) return next(`id "${req.params.id}" is not a number.`);
+    Quiz.destroy({where:{id:ids}})
+    .then(()=>{return res.redirect('/quizzes')})
+    .catch(next);
+    
+
  };
 
 
@@ -234,6 +299,9 @@ app.get('/quizzes/:id/play',  playController);
 app.get('/quizzes/:id/check', checkController);
 app.get('/quizzes/new',       newController);
 app.post('/quizzes',          createController);
+app.get('/quizzes/:id/edit',  editController);
+app.put('/quizzes/:id',       updateController);
+app.delete('/quizzes/:id',    destroyController);
 
 // ..... crear rutas e instalar los MWs para:
 //   GET  /quizzes/:id/edit
